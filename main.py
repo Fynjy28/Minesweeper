@@ -14,7 +14,6 @@ colors = {
     8: '#9aa3b3'
 }
 
-
 class MyButton(tk.Button):
     def __init__(self, master, x, y, number=0, *args, **kwargs):
         super(MyButton, self).__init__(master, width=3, font='Calibri 15 bold', *args, **kwargs)
@@ -28,15 +27,20 @@ class MyButton(tk.Button):
     def __repr__(self):
         return f'MyButton{self.x} {self.y} {self.number} {self.is_mine}'
 
-
 class MineSweeper:
     window = tk.Tk()
+    window.title('MineSweeper')
+    window.resizable(width=False, height=False)
+
     ROW = 10
     COLUMNS = 10
     MINES = 10
+    timer_seconds = 0
+    open_set_windows = 0
+
+    IS_WIN = False
     IS_GAME_OVER = False
     IS_FIRST_CLICK = True
-    timer_seconds = 0
 
     def __init__(self):
         self.buttons = []
@@ -74,7 +78,6 @@ class MineSweeper:
             self.insert_mines(clicked_button.number)
             self.count_mines_in_buttons()
             self.print_buttons()
-
 
         if clicked_button.is_mine:
             clicked_button.config(text="*", background='red', disabledforeground='black')
@@ -121,27 +124,37 @@ class MineSweeper:
                             queue.append(next_btn)
 
     def create_settings_win(self):
-        win_settings = tk.Toplevel(self.window)
-        win_settings.wm_title('Настройки')
+        if self.open_set_windows < 1:
+            self.open_set_windows += 1
 
-        tk.Label(win_settings, text='Количество строк').grid(row=0, column=0)
-        row_entry = tk.Entry(win_settings)
-        row_entry.insert(0, MineSweeper.ROW)
-        row_entry.grid(row=0, column=1, padx=20, pady=20)
+            win_settings = tk.Tk()
+            win_settings.wm_title('Настройки')
+            win_settings.resizable(width=False, height=False)
 
-        tk.Label(win_settings, text='Количество колонок').grid(row=1, column=0)
-        column_entry = tk.Entry(win_settings)
-        column_entry.insert(0, MineSweeper.COLUMNS)
-        column_entry.grid(row=1, column=1, padx=20, pady=20)
+            tk.Label(win_settings, text='Количество строк').grid(row=0, column=0)
+            row_entry = tk.Entry(win_settings)
+            row_entry.insert(0, MineSweeper.ROW)
+            row_entry.grid(row=0, column=1, padx=20, pady=20)
 
-        tk.Label(win_settings, text='Количество мин').grid(row=2, column=0)
-        mines_entry = tk.Entry(win_settings)
-        mines_entry.insert(0, MineSweeper.MINES)
-        mines_entry.grid(row=2, column=1, padx=20, pady=20)
+            tk.Label(win_settings, text='Количество колонок').grid(row=1, column=0)
+            column_entry = tk.Entry(win_settings)
+            column_entry.insert(0, MineSweeper.COLUMNS)
+            column_entry.grid(row=1, column=1, padx=20, pady=20)
 
-        save_btn = tk.Button(win_settings, text='Применить',
-                             command=lambda: self.change_settings(row_entry, column_entry, mines_entry))
-        save_btn.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+            tk.Label(win_settings, text='Количество мин').grid(row=2, column=0)
+            mines_entry = tk.Entry(win_settings)
+            mines_entry.insert(0, MineSweeper.MINES)
+            mines_entry.grid(row=2, column=1, padx=20, pady=20)
+
+            save_btn = tk.Button(win_settings, text='Применить',
+                                 command=lambda: self.change_settings(row_entry, column_entry, mines_entry))
+
+            save_btn.grid(row=3, column=0, columnspan=2, padx=20, pady=20)
+
+            win_settings.protocol("WM_DELETE_WINDOW", lambda: [win_settings.destroy(), self.minus_windows()])
+
+    def minus_windows(self):
+        self.open_set_windows -= 1
 
     def change_settings(self, row: tk.Entry, column: tk.Entry, mines: tk.Entry):
         try:
@@ -149,6 +162,19 @@ class MineSweeper:
         except ValueError:
             showerror('Ошибка', 'Введено неправильно значение!')
             return
+
+        if int(row.get()) > 15 or int(row.get()) < 2:
+            showerror('Ошибка', 'Введено неподходящее количество строк.')
+            return
+
+        if int(column.get()) > 40 or int(column.get()) < 2:
+            showerror('Ошибка', 'Введено неподходящее количество колонок.')
+            return
+
+        if int(mines.get()) > int((int(row.get()) * int(column.get())) * 0.2) or int(mines.get()) < 2:
+            showerror('Ошибка', 'Введено неподходящее количество мин.')
+            return
+
         MineSweeper.ROW = int(row.get())
         MineSweeper.COLUMNS = int(column.get())
         MineSweeper.MINES = int(mines.get())
@@ -163,6 +189,7 @@ class MineSweeper:
         self.timer_label.config(text='00:00')
         self.timer_seconds = 0
         MineSweeper.IS_GAME_OVER = False
+        MineSweeper.IS_WIN = False
         MineSweeper.IS_FIRST_CLICK = True
 
         for i in range(MineSweeper.ROW + 2):
@@ -181,9 +208,9 @@ class MineSweeper:
         self.window.config(menu=menubar)
         settings_menu = tk.Menu(menubar, tearoff=0)
         settings_menu.add_command(label='Играть/Перезапуск', command=self.reload)
-        settings_menu.add_command(label='Настройки', command=self.create_settings_win)
+        settings_menu.add_command(label='Настройки', command=lambda:self.create_settings_win())
         settings_menu.add_command(label='Выход', command=self.window.destroy)
-        menubar.add_cascade(label='файл', menu=settings_menu)
+        menubar.add_cascade(label='меню', menu=settings_menu)
 
         count = 1
         for i in range(1, MineSweeper.ROW + 1):
@@ -198,7 +225,6 @@ class MineSweeper:
         for i in range(1, MineSweeper.COLUMNS + 1):
             tk.Grid.columnconfigure(self.window, i, weight=1)
 
-        # Add a dummy column to align the timer
         tk.Grid.columnconfigure(self.window, MineSweeper.COLUMNS, weight=0)
 
     def open_all_buttons(self):
@@ -230,7 +256,12 @@ class MineSweeper:
         if (btn_isnt_mine > 0) or (btn_count_flag_false > 0):
             return
         if btn_count_flag_true + btn_is_mine_but_not_flagged == MineSweeper.MINES:
-            self.open_all_buttons()
+            MineSweeper.IS_WIN = True
+            for i in range(1, MineSweeper.ROW + 1):
+                for j in range(1, MineSweeper.COLUMNS + 1):
+                    btn = self.buttons[i][j]
+                    if btn.is_mine:
+                        btn['text'] = '*'
             showinfo('Win!', 'Вы выиграли!')
         else:
             return
@@ -240,13 +271,13 @@ class MineSweeper:
         MineSweeper.window.mainloop()
 
     def update_timer(self):
-        if MineSweeper.IS_GAME_OVER:
+        if MineSweeper.IS_GAME_OVER or MineSweeper.IS_WIN:
             return
-        if not MineSweeper.IS_GAME_OVER and not MineSweeper.IS_FIRST_CLICK:
+        if not MineSweeper.IS_GAME_OVER and not MineSweeper.IS_FIRST_CLICK and not MineSweeper.IS_WIN:
             self.timer_seconds += 1
             mins, secs = divmod(self.timer_seconds, 60)
             self.timer_label.config(text=f'{mins:02}:{secs:02}')
-            if MineSweeper.IS_GAME_OVER:
+            if MineSweeper.IS_GAME_OVER or MineSweeper.IS_WIN:
                 return
             else:
                 self.window.after(999, self.update_timer)
@@ -290,7 +321,6 @@ class MineSweeper:
         indexes.remove(exclude_number)
         shuffle(indexes)
         return indexes[:MineSweeper.MINES]
-
 
 game = MineSweeper()
 game.start()
