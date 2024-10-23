@@ -60,7 +60,6 @@ class MineSweeper:
         if MineSweeper.IS_GAME_OVER or MineSweeper.IS_WIN:
             return
         cur_btn = event.widget
-        print(cur_btn['state'])
         if cur_btn['state'] == 'normal' or cur_btn['state'] == 'active':
             cur_btn['state'] = 'disabled'
             cur_btn['text'] = '🚩'
