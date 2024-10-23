@@ -57,20 +57,21 @@ class MineSweeper:
         self.timer_label.grid(row=0, column=MineSweeper.COLUMNS - 1, columnspan=2, sticky='e', padx=(0, 5))
 
     def right_click(self, event):
-        if MineSweeper.IS_GAME_OVER:
+        if MineSweeper.IS_GAME_OVER or MineSweeper.IS_WIN:
             return
         cur_btn = event.widget
-        if cur_btn['state'] == 'normal':
+        print(cur_btn['state'])
+        if cur_btn['state'] == 'normal' or cur_btn['state'] == 'active':
             cur_btn['state'] = 'disabled'
             cur_btn['text'] = '🚩'
             cur_btn['disabledforeground'] = 'red'
             self.check_win()
         elif cur_btn['text'] == '🚩':
             cur_btn['text'] = ''
-            cur_btn['state'] = 'normal'
+            cur_btn['state'] = 'active'
 
     def click(self, clicked_button: MyButton):
-        if MineSweeper.IS_GAME_OVER:
+        if MineSweeper.IS_GAME_OVER or MineSweeper.IS_WIN:
             return
         if MineSweeper.IS_FIRST_CLICK:
             MineSweeper.IS_FIRST_CLICK = False
